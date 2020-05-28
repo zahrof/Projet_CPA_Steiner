@@ -1,14 +1,12 @@
 package algorithms;
 
-import com.sun.source.tree.Tree;
-
 import java.awt.Point;
 import java.util.*;
 
 public class DefaultTeam {
 
   public class Graph{
-    int vertex;
+    int vertex;// un vertex représente un indice dans HitPoints
     LinkedList<Integer> list[];
 
     public Graph(int vertex){
@@ -40,7 +38,7 @@ public class DefaultTeam {
     Graph graph = new Graph(hitPoints.size());
     ArrayList< Edge> edgesVisited = new ArrayList<>();
     for (Point p : hitPoints) {
-      System.out.println(" Point : "+ p.x + " , "+ p.y);
+     // System.out.println(" Point : "+ p.x + " , "+ p.y);
       for (Edge e: edjL) {
           if (e.p.equals(p) ){
             if(!graph.list[hitPoints.indexOf(p)].contains(hitPoints.indexOf(e.q)))
@@ -151,48 +149,66 @@ public class DefaultTeam {
     double budgetActuel=0;
     ArrayList<Edge> remplacement = new ArrayList<>();
     Graph graph = convertEdgeListToAdjacencyList(t0Graph,hitPoints);
-    graph.printGraph(hitPoints);
+    //graph.printGraph(hitPoints);
 
     // chaque indice correspond à l'indice dans hitPoints
     boolean[] marked = new boolean[hitPoints.size()];
 
-    Queue<Point> fifo = new LinkedList<>();
+    MinHeap fifo = new MinHeap();
     // add (adds one to the end)
-    fifo.add(maisonMere);
+    fifo.insert(new MinHeap.MinHeapObject(maisonMere, maisonMere,0));
     marked[0]= true;
-    Point s;
-    while(!fifo.isEmpty()){
+    MinHeap.MinHeapObject s;
 
-      s = fifo.remove();
-      System.out.println(" S: "+ s);
 
-      // pour chaque voisin
-      for(int j=0; j < graph.list[hitPoints.indexOf(s)].size(); j++){
-        System.out.println("voisin "+ hitPoints.get(graph.list[hitPoints.indexOf(s)].get(j)));
-        // si il est pas marque
-        if(!marked[graph.list[hitPoints.indexOf(s)].get(j)]){
-          int indexI = points.indexOf(s);
-          int indexFinal = points.indexOf(hitPoints.get(graph.list[hitPoints.indexOf(s)].get(j)));
-          int k = shortestPath[indexI][indexFinal];
-          double distance = points.get(indexI).distance(points.get(k));
-          if ((k ==indexFinal) && (budgetActuel+ distance > budget)) {
-            System.out.println("budget actuel "+ budgetActuel);
-            return remplacement;
+    while(fifo.getList().size()!=0){
+      System.out.println();
+      s = fifo.extractMin();
+      System.out.println(" S: "+ s+ " distance "+ s.distAvecPred);
+      double apres = budgetActuel+s.distAvecPred;
+      System.out.println("budgetActuel "+budgetActuel+ "budget Apres: "+apres );
+      if(budgetActuel+s.distAvecPred< budget){
+        budgetActuel += s.distAvecPred;
+        System.out.println("ajout de "+ s.pere+ ", "+ s.current);
+        if(s.chemin.isEmpty()) remplacement.add(new Edge(s.pere, s.current));
+        else{
+          for (Edge e : s.chemin) {
+            remplacement.add(e);
           }
-          remplacement.add(new Edge(points.get(indexI),points.get(k)));
+        }
+        System.out.println("remplacement : "+ remplacement);
+      }
+      else{
+        System.out.println("RETOUR budget Actuel "+ budgetActuel);
+        System.out.println("RETOUR points "+ remplacement);
+        return remplacement;
+      }
+      // pour chaque voisin
+      for(int j = 0; j < graph.list[hitPoints.indexOf(s.current)].size(); j++){
+        MinHeap.MinHeapObject voisin = new MinHeap.MinHeapObject();
+
+        System.out.println("voisin "+ hitPoints.get(graph.list[hitPoints.indexOf(s.current)].get(j)));
+        // s'il est pas marque
+        if(!marked[graph.list[hitPoints.indexOf(s.current)].get(j)]){
+          int indexI = points.indexOf(s.current);
+          int indexFinal = points.indexOf(hitPoints.get(graph.list[hitPoints.indexOf(s.current)].get(j)));
+          int k = shortestPath[indexI][indexFinal];
+
+          double distance = points.get(indexI).distance(points.get(k));
+
+          voisin.getChemin().add(new Edge(points.get(indexI),points.get(k)) );
           while(k!=indexFinal){
             distance += points.get(k).distance(points.get(shortestPath[k][indexFinal]));
-           if (budgetActuel+ distance > budget) {
-             System.out.println("budget actuel " + budgetActuel);
-             return remplacement;
-           }
-            remplacement.add(new Edge(points.get(k), points.get(shortestPath[k][indexFinal])) );
+            System.out.println("");
+           voisin.getChemin().add(new Edge(points.get(k), points.get(shortestPath[k][indexFinal])) );
             k= shortestPath[k][indexFinal];
           }
-          if (budgetActuel+ distance > budget) return remplacement;
-          budgetActuel += distance;
-          fifo.add(hitPoints.get(graph.list[hitPoints.indexOf(s)].get(j)));
-          marked[graph.list[hitPoints.indexOf(s)].get(j)]=true;
+          System.out.println("distance: "+ distance);
+          voisin.setPere(s.current);
+          voisin.setCurrent(hitPoints.get(graph.list[hitPoints.indexOf(s.current)].get(j)));
+          voisin.setDistAvecPred(distance);
+          fifo.insert(voisin);
+          marked[graph.list[hitPoints.indexOf(s.current)].get(j)]=true;
         }
       }
     }
@@ -309,6 +325,14 @@ class Edge {
   protected Edge(Point p,Point q){ this.p=p; this.q=q; }
   protected Edge(Point p,Point q, double weight){ this.p=p; this.q=q; this.weight=weight; }
   protected double distance(){ return p.distance(q); }
+
+  @Override
+  public String toString() {
+    return "Edge{" +
+            "p=" + p +
+            ", q=" + q +
+            '}';
+  }
 }
 class NameTag {
   private ArrayList<Point> points;
